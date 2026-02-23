@@ -97,11 +97,8 @@
     <label>🔗 Link:</label>
     <input type="text" id="url" value="https://instagram.com">
 
-    <label>📝 Açıklama (Üst Metin):</label>
+    <label>📝 Açıklama (Alt Metin):</label>
     <input type="text" id="descText" value="Bizi Takip Edin!">
-
-    <label>📱 WhatsApp / Not:</label>
-    <input type="text" id="wpText" value="+90 555 555 55 55">
 
     <label>🚀 Merkez Logo (Opsiyonel):</label>
     <div class="upload-area" onclick="document.getElementById('logoInput').click()">
@@ -196,7 +193,7 @@
     // =========================
     let qrData = null;
     let bgImgObj = null;
-    let logoImgObj = null; // YENİ: Logo değişkeni
+    let logoImgObj = null;
     let currentUID = "";
     let pdfImgData = null;
     let uploadedImgObj = null;
@@ -220,7 +217,6 @@
         }
     }
 
-    // YENİ: Logo yükleme fonksiyonu
     function handleLogo(e) {
         const file = e.target.files[0];
         if (file) {
@@ -260,7 +256,7 @@
         currentUID = uid;
         let finalUrl = url.includes("?") ? `${url}&id=${uid}` : `${url}?id=${uid}`;
 
-        // YENİ: Hata toleransı 'L'den 'H'ye çekildi (Logo eklenebilmesi için zorunlu)
+        // Logo için yüksek hata toleransı (H)
         let qr = qrcode(0, 'H'); 
         qr.addData(finalUrl);
         qr.make();
@@ -302,13 +298,13 @@
             ctx.restore();
         }
 
-        // YENİ: Alt kısma metin alanı ayırma
-        let textAreaH = printAreaH * 0.18; // %18'lik alt boşluk
+        // Alt kısma metin alanı ayırma (%18)
+        let textAreaH = printAreaH * 0.18;
         let qrAreaH = printAreaH - textAreaH;
 
         let count = qrData.getModuleCount();
         let tileW = printAreaW / count;
-        let tileH = qrAreaH / count; // QR kod boyu yeni alana uyarlandı
+        let tileH = qrAreaH / count;
 
         let mainColor = document.getElementById("color").value;
         let emojiChar = document.getElementById("emoji").value || "⬛";
@@ -334,45 +330,31 @@
 
         drawLargeFinders(ctx, printAreaX, printAreaY, tileW, tileH, count, mainColor, frameStyle, dotStyle);
 
-        // YENİ: Merkez Logo Çizimi
+        // Merkez Logo Çizimi
         if (logoImgObj) {
-            let logoSize = Math.min(printAreaW, qrAreaH) * 0.22; // Logoyu ortaya 22% oranında yerleştir
+            let logoSize = Math.min(printAreaW, qrAreaH) * 0.22;
             let logoX = printAreaX + (printAreaW - logoSize) / 2;
             let logoY = printAreaY + (qrAreaH - logoSize) / 2;
             
-            ctx.fillStyle = "white"; // Logonun arkasını temizle
+            ctx.fillStyle = "white";
             ctx.beginPath();
             ctx.roundRect(logoX - 3, logoY - 3, logoSize + 6, logoSize + 6, 8);
             ctx.fill();
             ctx.drawImage(logoImgObj, logoX, logoY, logoSize, logoSize);
         }
 
-        // YENİ: Alt Metinleri Çizme (Açıklama, Link, WP)
+        // YENİ: Alt Metin Çizme (Sadece Açıklama, Siyah Renk, Bantsız)
         let textYStart = printAreaY + qrAreaH;
-        
-        ctx.fillStyle = "rgba(20, 20, 20, 0.85)"; // Şık, saydam arka plan
-        ctx.beginPath();
-        ctx.roundRect(printAreaX, textYStart + (textAreaH * 0.05), printAreaW, textAreaH * 0.9, 10);
-        ctx.fill();
-
         let descText = document.getElementById("descText").value || "Mega QR Stüdyo";
-        let wpText = document.getElementById("wpText").value || "";
-        let urlText = document.getElementById("url").value || "";
-
+        
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${textAreaH * 0.28}px "Segoe UI", Arial, sans-serif`;
-        ctx.fillText(descText, printAreaX + printAreaW/2, textYStart + textAreaH * 0.28);
-
-        ctx.fillStyle = "#ffdd00";
-        ctx.font = `${textAreaH * 0.20}px "Segoe UI", Arial, sans-serif`;
-        ctx.fillText(urlText, printAreaX + printAreaW/2, textYStart + textAreaH * 0.55);
-
-        ctx.fillStyle = "#25d366"; // WP Yeşili
-        ctx.font = `bold ${textAreaH * 0.22}px "Segoe UI", Arial, sans-serif`;
-        ctx.fillText("WhatsApp / Not: " + wpText, printAreaX + printAreaW/2, textYStart + textAreaH * 0.82);
+        ctx.fillStyle = "#000000"; // Siyah renk
+        // Font boyutu biraz büyütüldü tek satır kaldığı için
+        ctx.font = `bold ${textAreaH * 0.4}px "Segoe UI", Arial, sans-serif`;
+        // Tam ortaya hizala
+        ctx.fillText(descText, printAreaX + printAreaW/2, textYStart + textAreaH / 2);
     }
 
     function drawLargeFinders(ctx, startX, startY, tileW, tileH, count, color, frameStyle, dotStyle) {
@@ -466,7 +448,7 @@
             ctx.fillRect(printX, printY, PRINT_W, PRINT_H);
         }
 
-        // YENİ: Yazı alanı hesabı (Yüksek Çözünürlük)
+        // Yazı alanı hesabı (Yüksek Çözünürlük)
         const textAreaH = innerH * 0.18;
         const qrAreaH = innerH - textAreaH;
 
@@ -497,7 +479,7 @@
         }
         drawLargeFinders(ctx, innerX, innerY, tileW, tileH, count, mainColor, frameStyle, dotStyle);
 
-        // YENİ: Merkez Logosu Çizimi (Yüksek Çözünürlük)
+        // Merkez Logosu Çizimi (Yüksek Çözünürlük)
         if (logoImgObj) {
             let logoSize = Math.min(innerW, qrAreaH) * 0.22;
             let logoX = innerX + (innerW - logoSize) / 2;
@@ -509,31 +491,16 @@
             ctx.drawImage(logoImgObj, logoX, logoY, logoSize, logoSize);
         }
 
-        // YENİ: Alt Metinleri Çizme (Yüksek Çözünürlük)
+        // YENİ: Alt Metin Çizme (Yüksek Çözünürlük - Sadece Açıklama, Siyah, Bantsız)
         let textYStart = innerY + qrAreaH;
-        ctx.fillStyle = "rgba(20, 20, 20, 0.85)"; 
-        ctx.beginPath();
-        ctx.roundRect(innerX, textYStart + (textAreaH * 0.05), innerW, textAreaH * 0.9, 40);
-        ctx.fill();
-
         let descText = document.getElementById("descText").value || "Mega QR Stüdyo";
-        let wpText = document.getElementById("wpText").value || "";
-        let urlText = document.getElementById("url").value || "";
-
+        
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${textAreaH * 0.28}px "Segoe UI", Arial, sans-serif`;
-        ctx.fillText(descText, innerX + innerW/2, textYStart + textAreaH * 0.28);
-
-        ctx.fillStyle = "#ffdd00";
-        ctx.font = `${textAreaH * 0.20}px "Segoe UI", Arial, sans-serif`;
-        ctx.fillText(urlText, innerX + innerW/2, textYStart + textAreaH * 0.55);
-
-        ctx.fillStyle = "#25d366";
-        ctx.font = `bold ${textAreaH * 0.22}px "Segoe UI", Arial, sans-serif`;
-        ctx.fillText("WhatsApp / Not: " + wpText, innerX + innerW/2, textYStart + textAreaH * 0.82);
+        ctx.fillStyle = "#000000"; // Siyah renk
+        ctx.font = `bold ${textAreaH * 0.4}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText(descText, innerX + innerW/2, textYStart + textAreaH / 2);
 
         return true;
     }
