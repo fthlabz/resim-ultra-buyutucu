@@ -97,8 +97,8 @@
     <label>🔗 Link:</label>
     <input type="text" id="url" value="https://instagram.com">
 
-    <label>📝 Açıklama (Alt Metin):</label>
-    <input type="text" id="descText" value="Fthlabz">
+    <label>📝 Açıklama:</label>
+    <input type="text" id="descText" placeholder="Alt kısım etiketi" value="">
 
     <label>🚀 Merkez Logo (Opsiyonel):</label>
     <div class="upload-area" onclick="document.getElementById('logoInput').click()">
@@ -112,13 +112,13 @@
     </div>
     <input type="file" id="bgInput" accept="image/*" onchange="handleImage(event)">
 
-    <label>Resim Görünürlüğü: <span id="opVal">60%</span></label>
-    <input type="range" id="bgOpacity" min="0" max="70" value="60" oninput="updateOpacityLabel(this.value)">
+    <label>Resim Görünürlüğü: <span id="opVal">80%</span></label>
+    <input type="range" id="bgOpacity" min="0" max="95" value="80" oninput="updateOpacityLabel(this.value)">
 
     <div class="row">
         <div class="col">
             <label>😀 Emoji:</label>
-            <input type="text" id="emoji" value="⬛️">
+            <input type="text" id="emoji" value="🦁">
         </div>
         <div class="col">
             <label>🎨 Renk:</label>
@@ -330,30 +330,46 @@
 
         drawLargeFinders(ctx, printAreaX, printAreaY, tileW, tileH, count, mainColor, frameStyle, dotStyle);
 
-        // Merkez Logo Çizimi
+        // Merkez Logo Çizimi - Estetik Versiyon
         if (logoImgObj) {
             let logoSize = Math.min(printAreaW, qrAreaH) * 0.22;
             let logoX = printAreaX + (printAreaW - logoSize) / 2;
             let logoY = printAreaY + (qrAreaH - logoSize) / 2;
             
+            let padding = logoSize * 0.12; // Logonun etrafındaki beyaz boşluk
+            let borderRadius = logoSize * 0.15; // Yumuşak köşeler
+
+            ctx.save();
+            
+            // Dış Beyaz Kutu & Hafif Gölge
+            ctx.shadowColor = "rgba(0,0,0,0.3)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 3;
+            
             ctx.fillStyle = "white";
             ctx.beginPath();
-            ctx.roundRect(logoX - 3, logoY - 3, logoSize + 6, logoSize + 6, 8);
+            ctx.roundRect(logoX - padding, logoY - padding, logoSize + (padding*2), logoSize + (padding*2), borderRadius);
             ctx.fill();
+            
+            // Resim çizimi için gölgeyi kapat ve iç köşeleri yuvarlat
+            ctx.shadowColor = "transparent";
+            ctx.beginPath();
+            ctx.roundRect(logoX, logoY, logoSize, logoSize, borderRadius * 0.7);
+            ctx.clip(); // Resmi köşelere göre kes
+            
             ctx.drawImage(logoImgObj, logoX, logoY, logoSize, logoSize);
+            ctx.restore();
         }
 
-        // YENİ: Alt Metin Çizme (Sadece Açıklama, Siyah Renk, Bantsız)
+        // Alt Metin Çizme
         let textYStart = printAreaY + qrAreaH;
-        let descText = document.getElementById("descText").value || "Fthlabz";
+        let descText = document.getElementById("descText").value.trim() || "fthlabz";
         
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        ctx.fillStyle = "#000000"; // Siyah renk
-        // Font boyutu biraz büyütüldü tek satır kaldığı için
+        ctx.fillStyle = "#000000";
         ctx.font = `bold ${textAreaH * 0.4}px "Segoe UI", Arial, sans-serif`;
-        // Tam ortaya hizala
         ctx.fillText(descText, printAreaX + printAreaW/2, textYStart + textAreaH / 2);
     }
 
@@ -448,7 +464,7 @@
             ctx.fillRect(printX, printY, PRINT_W, PRINT_H);
         }
 
-        // Yazı alanı hesabı (Yüksek Çözünürlük)
+        // Yazı alanı hesabı
         const textAreaH = innerH * 0.18;
         const qrAreaH = innerH - textAreaH;
 
@@ -479,26 +495,42 @@
         }
         drawLargeFinders(ctx, innerX, innerY, tileW, tileH, count, mainColor, frameStyle, dotStyle);
 
-        // Merkez Logosu Çizimi (Yüksek Çözünürlük)
+        // Merkez Logosu Çizimi - Estetik Versiyon (Yüksek Çözünürlük)
         if (logoImgObj) {
             let logoSize = Math.min(innerW, qrAreaH) * 0.22;
             let logoX = innerX + (innerW - logoSize) / 2;
             let logoY = innerY + (qrAreaH - logoSize) / 2;
+            
+            let padding = logoSize * 0.12;
+            let borderRadius = logoSize * 0.15;
+
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.25)";
+            ctx.shadowBlur = innerW * 0.01; // Scale edilmiş gölge
+            ctx.shadowOffsetY = innerW * 0.005;
+
             ctx.fillStyle = "white";
             ctx.beginPath();
-            ctx.roundRect(logoX - 20, logoY - 20, logoSize + 40, logoSize + 40, 30);
+            ctx.roundRect(logoX - padding, logoY - padding, logoSize + (padding*2), logoSize + (padding*2), borderRadius);
             ctx.fill();
+
+            ctx.shadowColor = "transparent";
+            ctx.beginPath();
+            ctx.roundRect(logoX, logoY, logoSize, logoSize, borderRadius * 0.7);
+            ctx.clip();
+            
             ctx.drawImage(logoImgObj, logoX, logoY, logoSize, logoSize);
+            ctx.restore();
         }
 
-        // YENİ: Alt Metin Çizme (Yüksek Çözünürlük - Sadece Açıklama, Siyah, Bantsız)
+        // Alt Metin Çizme
         let textYStart = innerY + qrAreaH;
-        let descText = document.getElementById("descText").value || "Mega QR Stüdyo";
+        let descText = document.getElementById("descText").value.trim() || "fthlabz";
         
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        ctx.fillStyle = "#000000"; // Siyah renk
+        ctx.fillStyle = "#000000";
         ctx.font = `bold ${textAreaH * 0.4}px "Segoe UI", Arial, sans-serif`;
         ctx.fillText(descText, innerX + innerW/2, textYStart + textAreaH / 2);
 
