@@ -97,9 +97,21 @@
     <label>🔗 Link:</label>
     <input type="text" id="url" value="https://instagram.com">
 
+    <label>📝 Açıklama (Üst Metin):</label>
+    <input type="text" id="descText" value="Bizi Takip Edin!">
+
+    <label>📱 WhatsApp / Not:</label>
+    <input type="text" id="wpText" value="+90 555 555 55 55">
+
+    <label>🚀 Merkez Logo (Opsiyonel):</label>
+    <div class="upload-area" onclick="document.getElementById('logoInput').click()">
+        <div class="upload-text" id="logoText">Logo Seç (.png / .jpg)</div>
+    </div>
+    <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(event)">
+
     <label>🖼️ Arka Plan Resmi:</label>
     <div class="upload-area" onclick="document.getElementById('bgInput').click()">
-        <div class="upload-text">Resim Seç</div>
+        <div class="upload-text" id="bgText">Arka Plan Seç</div>
     </div>
     <input type="file" id="bgInput" accept="image/*" onchange="handleImage(event)">
 
@@ -169,38 +181,28 @@
     // =========================
     // ÖLÇÜLER / DÖNÜŞÜM
     // =========================
-    // 300 DPI yaklaşık px/cm
     const DPI = 118.11;
-
-    // Sayfa: 42x32 cm
     const PAGE_W = Math.round(42 * DPI);
     const PAGE_H = Math.round(32 * DPI);
-
-    // Baskı alanı: 40x30 cm
     const PRINT_W = Math.round(40 * DPI);
     const PRINT_H = Math.round(30 * DPI);
-
-    // 42x32 içinde ortalama
     const MARGIN_X = (PAGE_W - PRINT_W) / 2;
     const MARGIN_Y = (PAGE_H - PRINT_H) / 2;
-
-    // 1-2mm beyaz boşluk (istediğin gibi 1 yapabilirsin)
-    const INNER_MARGIN_MM = 2; // 1 veya 2
-    const INNER_MARGIN_PX = Math.round((INNER_MARGIN_MM / 10) * DPI); // mm -> cm -> px
+    const INNER_MARGIN_MM = 2; 
+    const INNER_MARGIN_PX = Math.round((INNER_MARGIN_MM / 10) * DPI); 
 
     // =========================
     // QR SİSTEMİ DEĞİŞKENLER
     // =========================
     let qrData = null;
     let bgImgObj = null;
+    let logoImgObj = null; // YENİ: Logo değişkeni
     let currentUID = "";
-
-    // Yüklenen resim (PDF/JPEG modülü için)
     let pdfImgData = null;
     let uploadedImgObj = null;
 
     // =========================
-    // ARKA PLAN YÜKLEME
+    // DOSYA YÜKLEME (BG & LOGO)
     // =========================
     function handleImage(e) {
         const file = e.target.files[0];
@@ -209,10 +211,27 @@
             reader.onload = (evt) => {
                 bgImgObj = new Image();
                 bgImgObj.onload = () => {
-                    document.querySelector('.upload-text').innerText = "✅ " + file.name;
-                    document.querySelector('.upload-area').style.borderColor = "#ffdd00";
+                    document.getElementById('bgText').innerText = "✅ " + file.name;
+                    document.getElementById('bgInput').previousElementSibling.style.borderColor = "#ffdd00";
                 };
                 bgImgObj.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // YENİ: Logo yükleme fonksiyonu
+    function handleLogo(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                logoImgObj = new Image();
+                logoImgObj.onload = () => {
+                    document.getElementById('logoText').innerText = "✅ " + file.name;
+                    document.getElementById('logoInput').previousElementSibling.style.borderColor = "#ffdd00";
+                };
+                logoImgObj.src = evt.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -241,7 +260,8 @@
         currentUID = uid;
         let finalUrl = url.includes("?") ? `${url}&id=${uid}` : `${url}?id=${uid}`;
 
-        let qr = qrcode(0, 'L');
+        // YENİ: Hata toleransı 'L'den 'H'ye çekildi (Logo eklenebilmesi için zorunlu)
+        let qr = qrcode(0, 'H'); 
         qr.addData(finalUrl);
         qr.make();
         qrData = qr;
@@ -273,7 +293,6 @@
         let printAreaW = PRINT_W * scaleFactor;
         let printAreaH = PRINT_H * scaleFactor;
 
-        // ARKA PLAN RESMİ ÇİZİMİ
         if (bgImgObj) {
             ctx.save();
             ctx.drawImage(bgImgObj, 0, 0, w, h);
@@ -283,9 +302,13 @@
             ctx.restore();
         }
 
+        // YENİ: Alt kısma metin alanı ayırma
+        let textAreaH = printAreaH * 0.18; // %18'lik alt boşluk
+        let qrAreaH = printAreaH - textAreaH;
+
         let count = qrData.getModuleCount();
         let tileW = printAreaW / count;
-        let tileH = printAreaH / count;
+        let tileH = qrAreaH / count; // QR kod boyu yeni alana uyarlandı
 
         let mainColor = document.getElementById("color").value;
         let emojiChar = document.getElementById("emoji").value || "⬛";
@@ -310,6 +333,46 @@
         }
 
         drawLargeFinders(ctx, printAreaX, printAreaY, tileW, tileH, count, mainColor, frameStyle, dotStyle);
+
+        // YENİ: Merkez Logo Çizimi
+        if (logoImgObj) {
+            let logoSize = Math.min(printAreaW, qrAreaH) * 0.22; // Logoyu ortaya 22% oranında yerleştir
+            let logoX = printAreaX + (printAreaW - logoSize) / 2;
+            let logoY = printAreaY + (qrAreaH - logoSize) / 2;
+            
+            ctx.fillStyle = "white"; // Logonun arkasını temizle
+            ctx.beginPath();
+            ctx.roundRect(logoX - 3, logoY - 3, logoSize + 6, logoSize + 6, 8);
+            ctx.fill();
+            ctx.drawImage(logoImgObj, logoX, logoY, logoSize, logoSize);
+        }
+
+        // YENİ: Alt Metinleri Çizme (Açıklama, Link, WP)
+        let textYStart = printAreaY + qrAreaH;
+        
+        ctx.fillStyle = "rgba(20, 20, 20, 0.85)"; // Şık, saydam arka plan
+        ctx.beginPath();
+        ctx.roundRect(printAreaX, textYStart + (textAreaH * 0.05), printAreaW, textAreaH * 0.9, 10);
+        ctx.fill();
+
+        let descText = document.getElementById("descText").value || "Mega QR Stüdyo";
+        let wpText = document.getElementById("wpText").value || "";
+        let urlText = document.getElementById("url").value || "";
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `bold ${textAreaH * 0.28}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText(descText, printAreaX + printAreaW/2, textYStart + textAreaH * 0.28);
+
+        ctx.fillStyle = "#ffdd00";
+        ctx.font = `${textAreaH * 0.20}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText(urlText, printAreaX + printAreaW/2, textYStart + textAreaH * 0.55);
+
+        ctx.fillStyle = "#25d366"; // WP Yeşili
+        ctx.font = `bold ${textAreaH * 0.22}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText("WhatsApp / Not: " + wpText, printAreaX + printAreaW/2, textYStart + textAreaH * 0.82);
     }
 
     function drawLargeFinders(ctx, startX, startY, tileW, tileH, count, color, frameStyle, dotStyle) {
@@ -367,7 +430,7 @@
     }
 
     // ==========================================================
-    // UPSCALE/JPEG ÇIKTI (TOP MODULE - UNTOUCHED)
+    // UPSCALE/JPEG ÇIKTI (HIGH-RES GÜNCELLEMESİ)
     // ==========================================================
     function renderQRPrintPageToCanvas(canvas) {
         if (!qrData) {
@@ -403,9 +466,13 @@
             ctx.fillRect(printX, printY, PRINT_W, PRINT_H);
         }
 
+        // YENİ: Yazı alanı hesabı (Yüksek Çözünürlük)
+        const textAreaH = innerH * 0.18;
+        const qrAreaH = innerH - textAreaH;
+
         const count = qrData.getModuleCount();
         const tileW = innerW / count;
-        const tileH = innerH / count;
+        const tileH = qrAreaH / count;
 
         const mainColor = document.getElementById("color").value;
         const emojiChar = document.getElementById("emoji").value || "⬛";
@@ -429,6 +496,45 @@
             }
         }
         drawLargeFinders(ctx, innerX, innerY, tileW, tileH, count, mainColor, frameStyle, dotStyle);
+
+        // YENİ: Merkez Logosu Çizimi (Yüksek Çözünürlük)
+        if (logoImgObj) {
+            let logoSize = Math.min(innerW, qrAreaH) * 0.22;
+            let logoX = innerX + (innerW - logoSize) / 2;
+            let logoY = innerY + (qrAreaH - logoSize) / 2;
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.roundRect(logoX - 20, logoY - 20, logoSize + 40, logoSize + 40, 30);
+            ctx.fill();
+            ctx.drawImage(logoImgObj, logoX, logoY, logoSize, logoSize);
+        }
+
+        // YENİ: Alt Metinleri Çizme (Yüksek Çözünürlük)
+        let textYStart = innerY + qrAreaH;
+        ctx.fillStyle = "rgba(20, 20, 20, 0.85)"; 
+        ctx.beginPath();
+        ctx.roundRect(innerX, textYStart + (textAreaH * 0.05), innerW, textAreaH * 0.9, 40);
+        ctx.fill();
+
+        let descText = document.getElementById("descText").value || "Mega QR Stüdyo";
+        let wpText = document.getElementById("wpText").value || "";
+        let urlText = document.getElementById("url").value || "";
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `bold ${textAreaH * 0.28}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText(descText, innerX + innerW/2, textYStart + textAreaH * 0.28);
+
+        ctx.fillStyle = "#ffdd00";
+        ctx.font = `${textAreaH * 0.20}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText(urlText, innerX + innerW/2, textYStart + textAreaH * 0.55);
+
+        ctx.fillStyle = "#25d366";
+        ctx.font = `bold ${textAreaH * 0.22}px "Segoe UI", Arial, sans-serif`;
+        ctx.fillText("WhatsApp / Not: " + wpText, innerX + innerW/2, textYStart + textAreaH * 0.82);
+
         return true;
     }
 
@@ -455,7 +561,7 @@
     }
 
     // ==========================================
-    // PDF/JPEG MODÜLÜ: RESİM SEÇİMİ
+    // PDF/JPEG MODÜLÜ: (DOKUNULMADI)
     // ==========================================
     function handlePdfSelect(e) {
         const file = e.target.files[0];
@@ -475,36 +581,22 @@
         reader.readAsDataURL(file);
     }
 
-    // ==========================================
-    // PDF: ULTRA ÇÖZÜNÜRLÜK GÜNCELLEMESİ (FIX)
-    // ==========================================
     async function generatePDF() {
         if (!pdfImgData) {
             alert("Önce baskı için bir resim yüklemelisiniz!");
             return;
         }
-
         const btn = document.querySelector(".btn-pdf");
         const originalText = btn.innerText;
         btn.innerText = "⏳ PDF HAZIRLANIYOR...";
 
         try {
             const { jsPDF } = window.jspdf;
-
-            // 42cm x 32cm Sayfa
             const doc = new jsPDF('l', 'cm', [42, 32]);
-
-            // BURADAKİ SİHİR: 'NONE'
-            // 'NONE': Resmi olduğu gibi, hiç sıkıştırmadan, piksel kaybetmeden gömer.
-            // 8000x8000 de yükleseniz, yazıcıya o veri gider.
-            // (Data, Format, X, Y, W, H, Alias, COMPRESSION, Rotation)
             doc.addImage(pdfImgData, 'JPEG', 1, 1, 40, 30, null, 'NONE');
-
             const pdfBlob = doc.output('blob');
-
             let timeStamp = new Date().toISOString().slice(0, 10);
             let fileName = `Baski_Ultra_40x30_${timeStamp}.pdf`;
-
             const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -525,27 +617,20 @@
         }
     }
 
-    // ==========================================
-    // JPEG MODÜLÜ (UNTOUCHED)
-    // ==========================================
     function renderUploadedTo4030Canvas(canvas) {
         if (!uploadedImgObj) {
             alert("Önce bir resim seçmelisin!");
             return false;
         }
-
         const ctx = canvas.getContext("2d");
         canvas.width = PRINT_W;
         canvas.height = PRINT_H;
-
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, PRINT_W, PRINT_H);
-
         const innerX = INNER_MARGIN_PX;
         const innerY = INNER_MARGIN_PX;
         const innerW = PRINT_W - 2 * INNER_MARGIN_PX;
         const innerH = PRINT_H - 2 * INNER_MARGIN_PX;
-
         ctx.drawImage(uploadedImgObj, innerX, innerY, innerW, innerH);
         return true;
     }
@@ -553,14 +638,11 @@
     function downloadUploadedAs4030JPG() {
         const btn = document.querySelector(".btn-jpg");
         const originalText = btn.innerText;
-
         if (!uploadedImgObj) {
             alert("Önce bir resim seçmelisin!");
             return;
         }
-
         btn.innerText = "⏳ HAZIRLANIYOR...";
-
         setTimeout(() => {
             const canvas = document.createElement("canvas");
             const ok = renderUploadedTo4030Canvas(canvas);
@@ -568,13 +650,11 @@
                 btn.innerText = originalText;
                 return;
             }
-
             const a = document.createElement("a");
             const stamp = new Date().toISOString().slice(0, 10);
             a.download = `Baski_40x30_${INNER_MARGIN_MM}mmPay_${stamp}.jpg`;
             a.href = canvas.toDataURL("image/jpeg", 0.95);
             a.click();
-
             btn.innerText = "✅ İNDİRİLDİ";
             setTimeout(() => (btn.innerText = originalText), 2500);
         }, 250);
