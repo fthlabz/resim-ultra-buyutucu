@@ -98,7 +98,7 @@
     <input type="text" id="url" value="https://instagram.com">
 
     <label>📝 Açıklama (Alt Metin):</label>
-    <input type="text" id="descText" value="Bizi Takip Edin!">
+    <input type="text" id="descText" value="Fthlabz">
 
     <label>🚀 Merkez Logo (Opsiyonel):</label>
     <div class="upload-area" onclick="document.getElementById('logoInput').click()">
@@ -112,8 +112,8 @@
     </div>
     <input type="file" id="bgInput" accept="image/*" onchange="handleImage(event)">
 
-    <label>Resim Görünürlüğü: <span id="opVal">80%</span></label>
-    <input type="range" id="bgOpacity" min="0" max="95" value="80" oninput="updateOpacityLabel(this.value)">
+    <label>Resim Görünürlüğü: <span id="opVal">60%</span></label>
+    <input type="range" id="bgOpacity" min="0" max="70" value="60" oninput="updateOpacityLabel(this.value)">
 
     <div class="row">
         <div class="col">
@@ -345,7 +345,7 @@
 
         // YENİ: Alt Metin Çizme (Sadece Açıklama, Siyah Renk, Bantsız)
         let textYStart = printAreaY + qrAreaH;
-        let descText = document.getElementById("descText").value || "Mega QR Stüdyo";
+        let descText = document.getElementById("descText").value || "Fthlabz";
         
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
